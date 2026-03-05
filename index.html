@@ -1,0 +1,1785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Volt Pro — Field Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;600;700;800;900&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
+<style>
+:root {
+  --bg: #0a0c0c;
+  --s1: #131717;
+  --s2: #1a1f1f;
+  --s3: #222929;
+  --border: #2c3535;
+  --border2: #3a4444;
+  --gold: #f5c518;
+  --gold2: #ffd84d;
+  --red: #ff3b3b;
+  --amber: #ffaa00;
+  --green: #3ddc84;
+  --blue: #4a9eff;
+  --text: #e2eaea;
+  --text2: #a8bcbc;
+  --muted: #5c7070;
+  --fd: 'Barlow Condensed', sans-serif;
+  --fb: 'Barlow', sans-serif;
+  --r: 10px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--fb);overflow:hidden}
+
+/* ── AUTH SCREEN ── */
+#authScreen{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:32px 24px;gap:20px;
+}
+.auth-bolt{font-size:64px;animation:pulseBolt 1.2s ease-in-out infinite alternate}
+@keyframes pulseBolt{from{opacity:.5;transform:scale(.9)}to{opacity:1;transform:scale(1.05)}}
+.auth-title{font-family:var(--fd);font-size:42px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase}
+.auth-sub{font-size:14px;color:var(--text2);text-align:center;max-width:300px;line-height:1.6}
+.auth-card{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:24px;width:100%;max-width:420px;display:flex;flex-direction:column;gap:16px}
+.auth-back{background:none;border:none;color:var(--text2);font-size:14px;cursor:pointer;padding:4px 0;text-align:left;font-family:var(--fb);transition:color .15s}
+.auth-back:hover{color:var(--gold)}
+.auth-heading{font-family:var(--fd);font-size:24px;font-weight:800;letter-spacing:2px;color:var(--text);text-transform:uppercase}
+.auth-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.auth-input{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px;color:var(--text);font-family:var(--fb);font-size:18px;width:100%;outline:none;transition:border-color .2s;text-align:center;letter-spacing:2px}
+.auth-input:focus{border-color:var(--gold)}
+.auth-input::placeholder{color:var(--muted);letter-spacing:0}
+.auth-btn{background:var(--gold);color:#0a0c0c;border:none;border-radius:10px;padding:16px;font-family:var(--fd);font-size:20px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:background .15s;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-btn:hover{background:var(--gold2)}
+.auth-btn:disabled{opacity:.4;cursor:not-allowed}
+.auth-hint{font-size:12px;color:var(--muted);line-height:1.5;text-align:center}
+.auth-link{color:var(--gold);cursor:pointer;text-decoration:underline;font-size:13px}
+.auth-error{color:var(--red);font-size:13px;text-align:center;min-height:20px}
+.auth-spinner{display:inline-block;width:18px;height:18px;border:3px solid rgba(10,12,12,.3);border-top-color:#0a0c0c;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* PIN Boxes */
+.pin-container{display:flex;flex-direction:column;align-items:center;gap:20px}
+.pin-label{font-size:13px;color:var(--text2);font-weight:600}
+.pin-boxes{display:flex;gap:12px;justify-content:center}
+.pin-box{width:56px;height:56px;background:var(--s2);border:2px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text);transition:all .2s}
+.pin-box.active{border-color:var(--gold);box-shadow:0 0 12px rgba(245,197,24,.15)}
+.pin-box.filled{border-color:var(--text2)}
+.pin-box.error{border-color:var(--red);animation:shake .4s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+
+/* PIN Keypad */
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:260px;width:100%}
+.pin-key{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px 10px;font-family:var(--fd);font-size:24px;font-weight:700;color:var(--text);cursor:pointer;text-align:center;transition:all .12s;min-height:54px;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
+.pin-key:hover{background:var(--s3);border-color:var(--border2)}
+.pin-key:active{background:rgba(245,197,24,.1);border-color:var(--gold);transform:scale(.95)}
+.pin-key.empty{background:transparent;border-color:transparent;cursor:default}
+.pin-key.empty:hover,.pin-key.empty:active{background:transparent;border-color:transparent;transform:none}
+.pin-key.backspace{font-size:20px;color:var(--muted)}
+.pin-key.backspace:hover{color:var(--red)}
+
+/* Auth step visibility */
+.auth-step{display:none;flex-direction:column;align-items:center;gap:20px;width:100%}
+.auth-step.active{display:flex}
+
+/* ── LAYOUT ── */
+#app{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+header{background:var(--s1);border-bottom:2px solid var(--gold);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:relative;z-index:50}
+.logo{font-family:var(--fd);font-size:26px;font-weight:900;letter-spacing:3px;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.header-right{display:flex;align-items:center;gap:10px}
+.loc-badge{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s}
+.loc-badge.ok{color:var(--green);border-color:var(--green)}
+.loc-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.active-job-pill{display:flex;align-items:center;gap:5px;background:rgba(245,197,24,.12);border:1px solid rgba(245,197,24,.35);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:700;color:var(--gold);max-width:140px;overflow:hidden;cursor:pointer}
+.ajp-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── TABS ── */
+.tabs{display:flex;background:var(--s1);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:70px;padding:11px 6px;text-align:center;font-family:var(--fd);font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-icon{font-size:16px;display:block;margin-bottom:1px}
+
+/* ── PANELS ── */
+.panels{flex:1;overflow:hidden;position:relative}
+.panel{position:absolute;inset:0;overflow-y:auto;display:none;flex-direction:column}
+.panel.active{display:flex}
+
+/* ── INSPECT PANEL ── */
+.inspect-body{padding:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:80px}
+.phase-row{display:flex;gap:8px}
+.phase-btn{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;font-size:12px;font-weight:700;color:var(--muted);font-family:var(--fd);letter-spacing:1px;text-transform:uppercase}
+.phase-btn.active{background:rgba(245,197,24,.12);border-color:var(--gold);color:var(--gold)}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;background:var(--s1);position:relative;overflow:hidden;transition:all .2s}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--gold);background:rgba(245,197,24,.04)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:40px;margin-bottom:8px;display:block}
+.upload-title{font-family:var(--fd);font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--muted)}
+.preview-wrap{position:relative;border-radius:var(--r);overflow:hidden}
+.preview-img{width:100%;display:block;max-height:260px;object-fit:cover;border-radius:var(--r)}
+.preview-tag{position:absolute;top:10px;left:10px;background:rgba(10,12,12,.8);border:1px solid var(--border2);border-radius:6px;padding:4px 10px;font-family:var(--fd);font-size:12px;font-weight:700;letter-spacing:1px;color:var(--gold)}
+.preview-change{position:absolute;bottom:10px;right:10px}
+.change-btn{background:rgba(10,12,12,.75);border:1px solid var(--border2);color:var(--text2);padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;backdrop-filter:blur(4px)}
+.analyze-btn{background:var(--gold);color:#0a0c0c;border:none;border-radius:var(--r);padding:15px;font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;transition:all .15s}
+.analyze-btn:hover{background:var(--gold2)}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed}
+.save-bar{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.save-bar-left{flex:1;min-width:0}
+.sb-label{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.sb-job{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-btn{background:var(--green);color:#0a0c0c;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:opacity .15s}
+.sb-btn:hover{opacity:.85}
+.sb-btn:disabled{opacity:.35;cursor:not-allowed}
+.results-area{display:flex;flex-direction:column;gap:10px}
+.sev-card{background:var(--s1);border-radius:var(--r);padding:13px 15px;border-left:4px solid var(--border);animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sev-card.critical{border-left-color:var(--red)}
+.sev-card.warning{border-left-color:var(--amber)}
+.sev-card.info{border-left-color:var(--green)}
+.sev-card.summary-card{border-left-color:var(--blue)}
+.sev-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.sev-pill{font-family:var(--fd);font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.critical .sev-pill{background:rgba(255,59,59,.18);color:var(--red)}
+.warning .sev-pill{background:rgba(255,170,0,.18);color:var(--amber)}
+.info .sev-pill{background:rgba(61,220,132,.18);color:var(--green)}
+.summary-card .sev-pill{background:rgba(74,158,255,.18);color:var(--blue)}
+.code-tag{font-size:11px;font-weight:700;color:var(--gold);background:rgba(245,197,24,.1);padding:2px 7px;border-radius:4px}
+.sev-title{font-weight:600;font-size:14px;margin-bottom:3px}
+.sev-body{font-size:13px;color:var(--text2);line-height:1.5}
+.sev-fix{margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--green)}
+.section-label{font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);padding:2px 0}
+
+/* ── CODE PANEL ── */
+.code-body{display:flex;flex-direction:column;flex:1;padding:14px;gap:12px;padding-bottom:24px}
+.nec-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;display:flex;align-items:center;justify-content:space-between}
+.nec-label{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase}
+.nec-val{font-family:var(--fd);font-size:22px;font-weight:800;color:var(--gold);margin-top:1px}
+.nec-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.quick-pills{display:flex;flex-wrap:wrap;gap:7px}
+.qpill{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap}
+.qpill:hover{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.07)}
+.chat-wrap{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;min-height:150px;max-height:42vh}
+.msg{max-width:90%;padding:11px 13px;border-radius:13px;font-size:14px;line-height:1.55;animation:fadeIn .25s ease}
+.msg.user{background:var(--gold);color:#0a0c0c;font-weight:500;align-self:flex-end;border-bottom-right-radius:4px}
+.msg.ai{background:var(--s2);color:var(--text);align-self:flex-start;border:1px solid var(--border);border-bottom-left-radius:4px}
+.msg.ai strong{color:var(--gold)}
+.msg.ai code{background:rgba(245,197,24,.1);color:var(--gold);padding:1px 5px;border-radius:3px;font-size:12px;font-family:'Courier New',monospace}
+.typing{background:var(--s2);border:1px solid var(--border);border-radius:13px;border-bottom-left-radius:4px;padding:13px 15px;align-self:flex-start;display:flex;gap:5px;align-items:center}
+.tdot{width:7px;height:7px;background:var(--muted);border-radius:50%;animation:tdot 1.2s infinite}
+.tdot:nth-child(2){animation-delay:.2s}
+.tdot:nth-child(3){animation-delay:.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-6px);opacity:1}}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:11px 13px;color:var(--text);font-family:var(--fb);font-size:15px;resize:none;min-height:46px;max-height:110px;outline:none;transition:border-color .2s}
+.chat-input:focus{border-color:var(--gold)}
+.chat-input::placeholder{color:var(--muted)}
+.send-btn{background:var(--gold);border:none;border-radius:var(--r);width:46px;height:46px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;color:#0a0c0c;font-weight:700}
+.send-btn:hover{background:var(--gold2)}
+.send-btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── JOBS PANEL ── */
+.jobs-body{padding:14px;display:flex;flex-direction:column;gap:12px;padding-bottom:80px}
+.jobs-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.jobs-heading{font-family:var(--fd);font-size:28px;font-weight:800;letter-spacing:2px;color:var(--text);text-transform:uppercase}
+.add-btn{background:var(--gold);color:#0a0c0c;border:none;border-radius:8px;padding:10px 16px;font-family:var(--fd);font-size:15px;font-weight:800;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.add-btn:hover{background:var(--gold2)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 24px;text-align:center;gap:10px}
+.empty-icon{font-size:52px}
+.empty-title{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--text)}
+.empty-sub{font-size:13px;color:var(--muted);line-height:1.5;max-width:260px}
+.job-card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:14px 15px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;animation:fadeIn .3s ease}
+.job-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.job-card.active{border-color:rgba(245,197,24,.5);background:rgba(245,197,24,.04)}
+.active-badge{position:absolute;top:10px;right:10px;background:var(--gold);color:#0a0c0c;font-family:var(--fd);font-size:9px;font-weight:800;letter-spacing:1.5px;padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.jc-wo{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-bottom:3px}
+.jc-addr{font-family:var(--fd);font-size:20px;font-weight:700;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.jc-type{font-size:12px;color:var(--muted)}
+.jc-stats{display:flex;gap:14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);flex-wrap:wrap}
+.jc-stat{font-size:12px;color:var(--muted)}
+.jc-stat strong{color:var(--text)}
+.jc-stat.danger{color:var(--red)}
+.jc-stat.warn{color:var(--amber)}
+.jc-actions{display:flex;gap:7px;margin-top:10px}
+.jca{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 6px;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
+.jca:hover{border-color:var(--gold);color:var(--gold)}
+.jca.pri{background:rgba(245,197,24,.12);border-color:rgba(245,197,24,.4);color:var(--gold)}
+.jca.danger:hover{border-color:var(--red);color:var(--red)}
+
+/* ── JOB DETAIL (full-screen overlay) ── */
+#jobDetail{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;overflow:hidden}
+#jobDetail.open{display:flex}
+.jd-header{background:var(--s1);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.jd-back{background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer;white-space:nowrap}
+.jd-title{flex:1;min-width:0}
+.jd-wo{font-size:10px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase}
+.jd-addr{font-family:var(--fd);font-size:20px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.boss-btn{background:var(--gold);color:#0a0c0c;border:none;border-radius:8px;padding:8px 14px;font-family:var(--fd);font-size:14px;font-weight:800;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:background .15s}
+.boss-btn:hover{background:var(--gold2)}
+.jd-body{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:18px;padding-bottom:80px}
+.jd-section{display:flex;flex-direction:column;gap:10px}
+.jd-sec-title{font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.jd-sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+/* Before/after photos */
+.photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.photo-slot{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;aspect-ratio:1/1;cursor:pointer;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;transition:border-color .2s}
+.photo-slot:hover{border-color:var(--border2)}
+.photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.photo-slot-label{font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);position:relative;z-index:1}
+.photo-slot-icon{font-size:28px;position:relative;z-index:1}
+.photo-tag{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(10,12,12,.9));padding:12px 8px 6px;font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;z-index:2}
+.photo-tag.before{color:var(--amber)}
+.photo-tag.after{color:var(--green)}
+/* Materials */
+.mat-list{display:flex;flex-direction:column;gap:7px}
+.mat-row{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;display:flex;align-items:center;gap:10px}
+.mat-name{flex:1;font-size:14px;font-weight:500}
+.mat-qty{font-family:var(--fd);font-size:15px;font-weight:700;color:var(--gold)}
+.mat-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:color .15s}
+.mat-del:hover{color:var(--red)}
+.mat-add-row{display:flex;gap:8px}
+.mat-inp{flex:1;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-family:var(--fb);font-size:14px;outline:none;transition:border-color .2s}
+.mat-inp:focus{border-color:var(--gold)}
+.mat-inp::placeholder{color:var(--muted)}
+.mat-qty-inp{width:72px}
+.mat-add-btn{background:var(--s2);border:1px solid var(--border);color:var(--gold);border-radius:8px;padding:10px 14px;font-size:18px;cursor:pointer;transition:all .15s;flex-shrink:0}
+.mat-add-btn:hover{background:rgba(245,197,24,.1);border-color:var(--gold)}
+/* Inspections timeline */
+.insp-timeline{display:flex;flex-direction:column;gap:10px}
+.insp-entry{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.insp-entry-head{padding:11px 13px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:background .15s}
+.insp-entry-head:hover{background:var(--s3)}
+.insp-phase-badge{font-family:var(--fd);font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:4px}
+.phase-before{background:rgba(255,170,0,.15);color:var(--amber)}
+.phase-after{background:rgba(61,220,132,.15);color:var(--green)}
+.phase-general{background:rgba(74,158,255,.15);color:var(--blue)}
+.insp-summary{flex:1;font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insp-time{font-size:11px;color:var(--muted);white-space:nowrap}
+.insp-expand{padding:0 13px 12px;border-top:1px solid var(--border);display:none;flex-direction:column;gap:8px}
+.insp-expand.open{display:flex}
+.insp-thumb{width:100%;max-height:200px;object-fit:cover;border-radius:7px}
+.insp-issue-row{background:var(--s1);border-radius:7px;padding:10px 12px;border-left:3px solid var(--border)}
+.insp-issue-row.critical{border-left-color:var(--red)}
+.insp-issue-row.warning{border-left-color:var(--amber)}
+.insp-issue-row.info{border-left-color:var(--green)}
+/* Code refs */
+.code-ref-list{display:flex;flex-direction:column;gap:7px}
+.code-ref-row{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;display:flex;align-items:flex-start;gap:10px}
+.code-ref-cite{font-family:var(--fd);font-size:14px;font-weight:800;color:var(--gold);white-space:nowrap;flex-shrink:0;margin-top:1px}
+.code-ref-desc{font-size:13px;color:var(--text2);line-height:1.4;flex:1}
+/* Chat log in job detail */
+.chat-log{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto}
+.cl-entry{padding:9px 12px;border-radius:10px;font-size:13px;line-height:1.5}
+.cl-entry.user{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.2);color:var(--text)}
+.cl-entry.ai{background:var(--s2);border:1px solid var(--border);color:var(--text2)}
+.cl-role{font-family:var(--fd);font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+
+/* ── LEARN PANEL ── */
+.learn-body{padding:14px;display:flex;flex-direction:column;gap:14px;padding-bottom:80px}
+.learn-hero{background:var(--s1);border-radius:14px;padding:20px;border:1px solid var(--border);position:relative;overflow:hidden}
+.learn-hero::before{content:'⚡';position:absolute;right:-10px;top:-10px;font-size:120px;opacity:.04;line-height:1}
+.learn-name{font-family:var(--fd);font-size:32px;font-weight:900;letter-spacing:2px;color:var(--text);text-transform:uppercase}
+.learn-subtitle{font-size:13px;color:var(--text2);margin-top:4px}
+.learn-level{display:inline-flex;align-items:center;gap:6px;background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.3);border-radius:20px;padding:5px 14px;margin-top:12px;font-family:var(--fd);font-size:14px;font-weight:700;color:var(--gold)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center}
+.stat-val{font-family:var(--fd);font-size:36px;font-weight:900;color:var(--gold);line-height:1}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.top-codes{display:flex;flex-direction:column;gap:7px}
+.code-learn-row{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:11px 14px;display:flex;align-items:center;gap:12px}
+.clr-rank{font-family:var(--fd);font-size:20px;font-weight:900;color:var(--muted);width:26px;text-align:center;flex-shrink:0}
+.clr-main{flex:1;min-width:0}
+.clr-code{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--gold)}
+.clr-desc{font-size:12px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clr-count{font-family:var(--fd);font-size:18px;font-weight:800;color:var(--text2);flex-shrink:0}
+.issue-type-list{display:flex;flex-direction:column;gap:7px}
+.it-row{background:var(--s1);border:1px solid var(--border);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px}
+.it-bar-wrap{flex:1;height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.it-bar{height:100%;border-radius:3px;background:var(--gold);transition:width .6s ease}
+.it-label{font-size:13px;font-weight:600;min-width:90px;flex-shrink:0}
+.it-count{font-family:var(--fd);font-size:14px;font-weight:700;color:var(--text2);min-width:28px;text-align:right}
+.refresh-learn-btn{background:var(--s2);border:1px solid var(--border);color:var(--text2);border-radius:var(--r);padding:14px;font-family:var(--fd);font-size:15px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;width:100%}
+.refresh-learn-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── MODALS ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:80;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--s1);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:24px 20px 40px;width:100%;max-width:600px;max-height:88dvh;overflow-y:auto;animation:slideUp .25s cubic-bezier(.34,1.56,.64,1)}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-head{font-family:var(--fd);font-size:22px;font-weight:900;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.modal-x{background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:14px}
+.fg{margin-bottom:15px}
+.fl{display:block;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.fi{width:100%;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:var(--fb);font-size:15px;outline:none;transition:border-color .2s;resize:none}
+.fi:focus{border-color:var(--gold)}
+.fi::placeholder{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
+.chip.on{background:rgba(245,197,24,.12);border-color:var(--gold);color:var(--gold)}
+.modal-actions{display:flex;gap:10px;margin-top:6px}
+.ma-cancel{flex:1;background:var(--s2);border:1px solid var(--border);color:var(--muted);border-radius:var(--r);padding:14px;font-family:var(--fd);font-size:16px;font-weight:700;letter-spacing:1px;cursor:pointer}
+.ma-confirm{flex:2;background:var(--gold);border:none;color:#0a0c0c;border-radius:var(--r);padding:14px;font-family:var(--fd);font-size:16px;font-weight:900;letter-spacing:1.5px;cursor:pointer;transition:background .15s;text-transform:uppercase}
+.ma-confirm:hover{background:var(--gold2)}
+
+/* ── BOSS REPORT MODAL ── */
+.boss-report-wrap{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:16px;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;line-height:1.7;color:var(--text2);max-height:55vh;overflow-y:auto}
+.copy-report-btn{background:var(--gold);color:#0a0c0c;border:none;border-radius:var(--r);padding:14px;font-family:var(--fd);font-size:17px;font-weight:800;letter-spacing:2px;text-transform:uppercase;cursor:pointer;width:100%;margin-top:12px;transition:background .15s}
+.copy-report-btn:hover{background:var(--gold2)}
+.generating-wrap{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px 20px;color:var(--muted)}
+.gen-bolt{font-size:48px;animation:pulseBolt 0.8s ease-in-out infinite alternate}
+.gen-text{font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:2px;color:var(--gold)}
+
+/* ── TOAST & LOADING ── */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--s2);border:1px solid var(--border2);color:var(--text);padding:11px 20px;border-radius:24px;font-size:13px;font-weight:600;z-index:200;transition:transform .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.loading-ov{position:fixed;inset:0;background:rgba(10,12,12,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:150;gap:18px;backdrop-filter:blur(4px)}
+.lov-bolt{font-size:60px;animation:pulseBolt .8s ease-in-out infinite alternate}
+.lov-text{font-family:var(--fd);font-size:19px;font-weight:800;letter-spacing:2px;color:var(--gold)}
+.lov-sub{font-size:13px;color:var(--muted)}
+.spinner{width:18px;height:18px;border:3px solid rgba(0,0,0,.3);border-top-color:#0a0c0c;border-radius:50%;animation:spin .7s linear infinite}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH SCREEN ── -->
+<div id="authScreen">
+  <!-- Step 1: Phone Number -->
+  <div class="auth-step active" id="authStep1">
+    <div class="auth-bolt">⚡</div>
+    <div class="auth-title">Volt Pro</div>
+    <div class="auth-sub">Enter your mobile number to continue</div>
+    <div class="auth-card">
+      <div>
+        <div class="auth-label">Phone Number</div>
+        <input class="auth-input" id="authPhone" type="tel" placeholder="(239) 555-0123" autocomplete="tel" maxlength="14">
+      </div>
+      <div class="auth-error" id="authPhoneError"></div>
+      <button class="auth-btn" id="authPhoneBtn" onclick="authLookupPhone()">
+        <span id="authPhoneBtnInner">Continue ➤</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2a: Register (new user) -->
+  <div class="auth-step" id="authStep2a">
+    <div class="auth-bolt">⚡</div>
+    <div class="auth-title">Volt Pro</div>
+    <div class="auth-card">
+      <button class="auth-back" onclick="authGoStep(1)">← Back</button>
+      <div class="auth-heading">Create Your Account</div>
+      <div>
+        <div class="auth-label">Full Name</div>
+        <input class="auth-input" id="authRegName" placeholder="e.g. Jake Shank" autocomplete="name" style="text-align:left;letter-spacing:0">
+      </div>
+      <div class="pin-container">
+        <div class="pin-label">Choose a 4-digit PIN</div>
+        <div class="pin-boxes" id="regPinBoxes">
+          <div class="pin-box active"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+        </div>
+        <div class="pin-keypad" id="regPinKeypad"></div>
+      </div>
+      <div class="pin-container" id="regConfirmWrap" style="display:none">
+        <div class="pin-label">Confirm PIN</div>
+        <div class="pin-boxes" id="regConfirmBoxes">
+          <div class="pin-box active"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+        </div>
+        <div class="pin-keypad" id="regConfirmKeypad"></div>
+      </div>
+      <div class="auth-error" id="authRegError"></div>
+      <button class="auth-btn" id="authRegBtn" onclick="authRegister()" style="display:none">
+        <span id="authRegBtnInner">Create Account ⚡</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2b: PIN Entry (returning user) -->
+  <div class="auth-step" id="authStep2b">
+    <div class="auth-bolt">⚡</div>
+    <div class="auth-title">Volt Pro</div>
+    <div class="auth-card">
+      <button class="auth-back" onclick="authGoStep(1)">← Back</button>
+      <div class="auth-heading" id="authWelcomeName">Welcome Back</div>
+      <div class="pin-container">
+        <div class="pin-label">Enter your PIN</div>
+        <div class="pin-boxes" id="loginPinBoxes">
+          <div class="pin-box active"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+          <div class="pin-box"></div>
+        </div>
+        <div class="pin-keypad" id="loginPinKeypad"></div>
+      </div>
+      <div class="auth-error" id="authLoginError"></div>
+      <div style="text-align:center;margin-top:4px">
+        <span class="auth-link" onclick="authSwitchAccount()">Not you? Switch account</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app" style="display:none">
+  <header>
+    <div class="logo">⚡ VOLT</div>
+    <div class="header-right">
+      <div class="loc-badge" id="locBadge" onclick="detectLocation()">
+        <div class="loc-dot"></div>
+        <span id="locText">Locating…</span>
+      </div>
+      <div class="active-job-pill" id="activeJobPill" onclick="switchTab('jobs')" style="display:none">
+        <span>⚡</span>
+        <span class="ajp-text" id="activeJobPillText">—</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('inspect')"><span class="tab-icon">📷</span>INSPECT</div>
+    <div class="tab" onclick="switchTab('code')"><span class="tab-icon">📋</span>CODE</div>
+    <div class="tab" onclick="switchTab('jobs')"><span class="tab-icon">🗂️</span>JOBS</div>
+    <div class="tab" onclick="switchTab('learn')"><span class="tab-icon">🧠</span>LEARN</div>
+  </div>
+
+  <div class="panels">
+    <!-- INSPECT -->
+    <div class="panel active" id="panel-inspect">
+      <div class="inspect-body">
+        <div class="phase-row">
+          <div class="phase-btn active" onclick="setPhase('before',this)">📸 Before</div>
+          <div class="phase-btn" onclick="setPhase('after',this)">✅ After</div>
+          <div class="phase-btn" onclick="setPhase('general',this)">🔍 General</div>
+        </div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" capture="environment" onchange="handleFile(this)">
+          <span class="upload-icon">📷</span>
+          <div class="upload-title">Tap to Upload / Take Photo</div>
+          <div class="upload-sub">Panels · Wiring · Outlets · Breakers</div>
+        </div>
+        <div id="previewWrap" style="display:none" class="preview-wrap">
+          <img id="previewImg" class="preview-img">
+          <div class="preview-tag" id="previewTag">BEFORE</div>
+          <div class="preview-change">
+            <label class="change-btn" for="fileInput2">Change</label>
+            <input type="file" id="fileInput2" accept="image/*" capture="environment" style="display:none" onchange="handleFile(this)">
+          </div>
+        </div>
+        <button class="analyze-btn" id="analyzeBtn" onclick="analyzePhoto()" disabled>
+          <span id="analyzeBtnInner">⚡ ANALYZE</span>
+        </button>
+        <div class="save-bar" id="saveBar" style="display:none">
+          <div class="save-bar-left">
+            <div class="sb-label">Save to Active Job</div>
+            <div class="sb-job" id="sbJobName">No job selected</div>
+          </div>
+          <button class="sb-btn" id="sbBtn" onclick="saveToJob()">💾 Save</button>
+        </div>
+        <div class="results-area" id="resultsArea"></div>
+      </div>
+    </div>
+
+    <!-- CODE -->
+    <div class="panel" id="panel-code">
+      <div class="code-body">
+        <div class="nec-card">
+          <div>
+            <div class="nec-label">Active Code</div>
+            <div class="nec-val" id="necVal">—</div>
+            <div class="nec-sub" id="necSub">Detecting jurisdiction…</div>
+          </div>
+          <div style="font-size:32px">📖</div>
+        </div>
+        <div class="quick-pills">
+          <div class="qpill" onclick="askCode('AFCI requirements for bedrooms?')">AFCI bedrooms</div>
+          <div class="qpill" onclick="askCode('Wire gauge for a 20A circuit?')">20A wire gauge</div>
+          <div class="qpill" onclick="askCode('Box fill calculation rules?')">Box fill</div>
+          <div class="qpill" onclick="askCode('GFCI locations in kitchens?')">GFCI kitchen</div>
+          <div class="qpill" onclick="askCode('Underground wiring burial depth?')">Burial depth</div>
+          <div class="qpill" onclick="askCode('Minimum circuit breaker clearance?')">Breaker clearance</div>
+          <div class="qpill" onclick="askCode('Service entrance sizing?')">Service sizing</div>
+        </div>
+        <div class="chat-wrap" id="codeChat">
+          <div class="msg ai">👋 I'm your NEC code expert. Once location is detected I'll answer questions specific to your jurisdiction.<br><br>Ask anything about wiring, circuits, grounding, load calculations, or compliance.</div>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="codeInput" placeholder="Ask a code question…" rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCode()}"
+            oninput="autoResize(this)"></textarea>
+          <button class="send-btn" id="sendCodeBtn" onclick="sendCode()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOBS -->
+    <div class="panel" id="panel-jobs">
+      <div class="jobs-body">
+        <div class="jobs-top">
+          <div class="jobs-heading">Job Log</div>
+          <button class="add-btn" onclick="openNewJobModal()">+ New Job</button>
+        </div>
+        <div id="jobsEmpty" class="empty-state">
+          <div class="empty-icon">🗂️</div>
+          <div class="empty-title">No Jobs Yet</div>
+          <div class="empty-sub">Create a job to start tracking before/after photos, materials, code refs and inspections.</div>
+        </div>
+        <div id="jobsList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+    </div>
+
+    <!-- LEARN -->
+    <div class="panel" id="panel-learn">
+      <div class="learn-body" id="learnBody">
+        <div style="text-align:center;padding:60px 24px;color:var(--muted)">
+          <div style="font-size:48px;margin-bottom:12px">🧠</div>
+          <div style="font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:2px">Loading your profile…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JOB DETAIL (full screen) -->
+<div id="jobDetail">
+  <div class="jd-header">
+    <button class="jd-back" onclick="closeJobDetail()">← Back</button>
+    <div class="jd-title">
+      <div class="jd-wo" id="jdWo"></div>
+      <div class="jd-addr" id="jdAddr"></div>
+    </div>
+    <button class="boss-btn" onclick="generateBossReport()">📋 Boss Report</button>
+  </div>
+  <div class="jd-body">
+    <!-- Before/After Photos -->
+    <div class="jd-section">
+      <div class="jd-sec-title">Before / After</div>
+      <div class="photo-grid" id="jdPhotoGrid"></div>
+    </div>
+    <!-- Materials -->
+    <div class="jd-section">
+      <div class="jd-sec-title">Materials Used</div>
+      <div class="mat-list" id="jdMatList"></div>
+      <div class="mat-add-row">
+        <input class="mat-inp" id="matName" placeholder="Material name…">
+        <input class="mat-inp mat-qty-inp" id="matQty" placeholder="Qty">
+        <button class="mat-add-btn" onclick="addMaterial()">+</button>
+      </div>
+    </div>
+    <!-- Code References -->
+    <div class="jd-section">
+      <div class="jd-sec-title">Code References</div>
+      <div class="code-ref-list" id="jdCodeRefs"></div>
+    </div>
+    <!-- Inspection Timeline -->
+    <div class="jd-section">
+      <div class="jd-sec-title">Inspection Log</div>
+      <div class="insp-timeline" id="jdInspTimeline"></div>
+    </div>
+    <!-- Chat Log -->
+    <div class="jd-section">
+      <div class="jd-sec-title">Code Chat Log</div>
+      <div class="chat-log" id="jdChatLog"></div>
+    </div>
+  </div>
+</div>
+
+<!-- NEW JOB MODAL -->
+<div class="modal-bg" id="newJobModal" style="display:none" onclick="if(event.target===this)closeNewJobModal()">
+  <div class="modal">
+    <div class="modal-head">New Job <button class="modal-x" onclick="closeNewJobModal()">✕</button></div>
+    <div class="fg"><label class="fl">Work Order # <span style="color:var(--muted)">(optional)</span></label><input class="fi" id="mWo" placeholder="WO-2025-0042"></div>
+    <div class="fg"><label class="fl">Address / Location *</label><input class="fi" id="mAddr" placeholder="123 Main St, Cape Coral FL"></div>
+    <div class="fg"><label class="fl">Job Type</label>
+      <div class="chips" id="typeChips">
+        <div class="chip on" onclick="pickType(this)">Service Call</div>
+        <div class="chip" onclick="pickType(this)">New Install</div>
+        <div class="chip" onclick="pickType(this)">Inspection</div>
+        <div class="chip" onclick="pickType(this)">Repair</div>
+        <div class="chip" onclick="pickType(this)">Panel Upgrade</div>
+        <div class="chip" onclick="pickType(this)">Other</div>
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Notes</label><textarea class="fi" id="mNotes" rows="2" placeholder="Customer issue, initial observations…"></textarea></div>
+    <div class="modal-actions">
+      <button class="ma-cancel" onclick="closeNewJobModal()">Cancel</button>
+      <button class="ma-confirm" onclick="createJob()">Create Job</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOSS REPORT MODAL -->
+<div class="modal-bg" id="bossModal" style="display:none" onclick="if(event.target===this)document.getElementById('bossModal').style.display='none'">
+  <div class="modal">
+    <div class="modal-head">Boss Report <button class="modal-x" onclick="document.getElementById('bossModal').style.display='none'">✕</button></div>
+    <div id="bossContent">
+      <div class="generating-wrap">
+        <div class="gen-bolt">⚡</div>
+        <div class="gen-text">Generating Report…</div>
+        <div style="color:var(--muted);font-size:13px">Reviewing job data…</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="loading-ov" id="loadingOv" style="display:none">
+  <div class="lov-bolt">⚡</div>
+  <div class="lov-text">ANALYZING</div>
+  <div class="lov-sub">Scanning for electrical issues…</div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// CONFIG & STATE
+// ═══════════════════════════════════
+const CLAUDE_API = 'https://lsbhmnldbkfqtmtqhnvl.supabase.co/functions/v1/claude-proxy';
+const MODEL = 'claude-sonnet-4-20250514';
+const LS_USER = 'volt_user_id';
+const LS_NAME = 'volt_user_name';
+
+const SB_URL = 'https://lsbhmnldbkfqtmtqhnvl.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzYmhtbmxkYmtmcXRtdHFobnZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU0Nzg4MTEsImV4cCI6MjA1MTA1NDgxMX0.2xHXpCdGLK_kpn9SnJn6PHWvG_dVGG2Hih_M2JZRT8o';
+
+let USER_ID = '', USER_NAME = '';
+let necInfo = null;
+let activeJobId = null;
+let currentPhase = 'before';
+let currentImageB64 = null, currentImageMime = null;
+let lastAnalysis = null;
+let codeHistory = [];
+let viewingJobId = null;
+let jobsCache = [];
+let selectedType = 'Service Call';
+
+// ═══════════════════════════════════
+// SUPABASE HELPERS
+// ═══════════════════════════════════
+async function sbFetch(path, opts = {}) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, {
+    ...opts,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...(opts.headers || {})
+    }
+  });
+  if (!r.ok) {
+    const err = await r.text();
+    throw new Error(err);
+  }
+  const ct = r.headers.get('content-type') || '';
+  if (ct.includes('json') && r.status !== 204) return r.json();
+  return null;
+}
+
+const DB = {
+  // Jobs
+  getJobs: () => sbFetch(`jobs?user_id=eq.${USER_ID}&order=created_at.desc`),
+  createJob: (d) => sbFetch('jobs', { method: 'POST', body: JSON.stringify({ ...d, user_id: USER_ID }) }),
+  deleteJob: (id) => sbFetch(`jobs?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' }),
+  // Inspections
+  getInspections: (jobId) => sbFetch(`inspections?job_id=eq.${jobId}&order=created_at.desc`),
+  createInspection: (d) => sbFetch('inspections', { method: 'POST', body: JSON.stringify(d) }),
+  // Materials
+  getMaterials: (jobId) => sbFetch(`materials?job_id=eq.${jobId}&order=created_at.asc`),
+  createMaterial: (d) => sbFetch('materials', { method: 'POST', body: JSON.stringify(d) }),
+  deleteMaterial: (id) => sbFetch(`materials?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' }),
+  // Code refs
+  getCodeRefs: (jobId) => sbFetch(`code_refs?job_id=eq.${jobId}&order=created_at.desc`),
+  createCodeRef: (d) => sbFetch('code_refs', { method: 'POST', body: JSON.stringify(d) }),
+  // Chat logs
+  getChatLog: (jobId) => sbFetch(`chat_logs?job_id=eq.${jobId}&order=created_at.asc`),
+  createChatEntry: (d) => sbFetch('chat_logs', { method: 'POST', body: JSON.stringify(d) }),
+  // Learning events
+  getLearningEvents: () => sbFetch(`learning_events?user_id=eq.${USER_ID}&order=created_at.desc`),
+  createLearningEvent: (d) => sbFetch('learning_events', { method: 'POST', body: JSON.stringify({ ...d, user_id: USER_ID }) }),
+  // Users (for auth)
+  queryUserByPhone: (phone) => sbFetch(`users?phone=eq.${encodeURIComponent(phone)}&limit=1`),
+  registerUser: (d) => sbFetch('users', { method: 'POST', body: JSON.stringify(d) }),
+};
+
+// ═══════════════════════════════════
+// AUTH — PHONE + PIN FLOW
+// ═══════════════════════════════════
+let authPhoneNormalized = '';
+let authFoundUser = null;
+let authPinState = { reg: '', regConfirm: '', login: '' };
+let authFailCount = 0;
+
+function formatPhone(raw) {
+  const d = raw.replace(/\D/g, '').slice(0, 10);
+  if (d.length === 0) return '';
+  if (d.length <= 3) return '(' + d;
+  if (d.length <= 6) return '(' + d.slice(0,3) + ') ' + d.slice(3);
+  return '(' + d.slice(0,3) + ') ' + d.slice(3,6) + '-' + d.slice(6);
+}
+
+function normalizePhone(raw) {
+  return raw.replace(/\D/g, '');
+}
+
+// Phone input auto-format
+document.addEventListener('DOMContentLoaded', () => {
+  const phoneInput = document.getElementById('authPhone');
+  if (phoneInput) {
+    phoneInput.addEventListener('input', function() {
+      const cursorPos = this.selectionStart;
+      const oldLen = this.value.length;
+      this.value = formatPhone(this.value);
+      const newLen = this.value.length;
+      const newPos = cursorPos + (newLen - oldLen);
+      this.setSelectionRange(newPos, newPos);
+    });
+    phoneInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); authLookupPhone(); }
+    });
+  }
+});
+
+function authGoStep(step) {
+  document.querySelectorAll('.auth-step').forEach(s => s.classList.remove('active'));
+  if (step === 1) {
+    document.getElementById('authStep1').classList.add('active');
+    authFoundUser = null;
+    authPhoneNormalized = '';
+    authPinState = { reg: '', regConfirm: '', login: '' };
+    authFailCount = 0;
+  } else if (step === '2a') {
+    document.getElementById('authStep2a').classList.add('active');
+    authPinState.reg = '';
+    authPinState.regConfirm = '';
+    document.getElementById('regConfirmWrap').style.display = 'none';
+    document.getElementById('authRegBtn').style.display = 'none';
+    document.getElementById('authRegError').textContent = '';
+    renderPinBoxes('regPinBoxes', '');
+    renderPinBoxes('regConfirmBoxes', '');
+  } else if (step === '2b') {
+    document.getElementById('authStep2b').classList.add('active');
+    authPinState.login = '';
+    authFailCount = 0;
+    document.getElementById('authLoginError').textContent = '';
+    if (authFoundUser) {
+      document.getElementById('authWelcomeName').textContent = 'Welcome back, ' + (authFoundUser.name || 'Electrician');
+    }
+    renderPinBoxes('loginPinBoxes', '');
+  }
+}
+
+async function authLookupPhone() {
+  const raw = document.getElementById('authPhone').value;
+  const phone = normalizePhone(raw);
+  if (phone.length < 10) {
+    document.getElementById('authPhoneError').textContent = 'Enter a valid 10-digit phone number';
+    return;
+  }
+  authPhoneNormalized = phone;
+  document.getElementById('authPhoneError').textContent = '';
+  document.getElementById('authPhoneBtn').disabled = true;
+  document.getElementById('authPhoneBtnInner').innerHTML = '<span class="auth-spinner"></span>';
+
+  try {
+    const users = await DB.queryUserByPhone(phone);
+    if (users && users.length > 0) {
+      authFoundUser = users[0];
+      authGoStep('2b');
+    } else {
+      authFoundUser = null;
+      authGoStep('2a');
+    }
+  } catch (e) {
+    document.getElementById('authPhoneError').textContent = 'Connection error — try again';
+    console.error(e);
+  } finally {
+    document.getElementById('authPhoneBtn').disabled = false;
+    document.getElementById('authPhoneBtnInner').textContent = 'Continue ➤';
+  }
+}
+
+// PIN Keypad rendering
+function buildKeypad(containerId, onDigit, onBackspace) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','←'];
+  keys.forEach(k => {
+    const btn = document.createElement('div');
+    if (k === '') {
+      btn.className = 'pin-key empty';
+    } else if (k === '←') {
+      btn.className = 'pin-key backspace';
+      btn.textContent = '←';
+      btn.onclick = onBackspace;
+    } else {
+      btn.className = 'pin-key';
+      btn.textContent = k;
+      btn.onclick = () => onDigit(k);
+    }
+    container.appendChild(btn);
+  });
+}
+
+function renderPinBoxes(boxesId, pin) {
+  const boxes = document.getElementById(boxesId).children;
+  for (let i = 0; i < 4; i++) {
+    const box = boxes[i];
+    box.textContent = i < pin.length ? '●' : '';
+    box.className = 'pin-box';
+    if (i < pin.length) box.classList.add('filled');
+    if (i === pin.length && i < 4) box.classList.add('active');
+  }
+}
+
+function shakePinBoxes(boxesId) {
+  const boxes = document.getElementById(boxesId).children;
+  for (let i = 0; i < 4; i++) {
+    boxes[i].classList.add('error');
+  }
+  setTimeout(() => {
+    for (let i = 0; i < 4; i++) {
+      boxes[i].classList.remove('error');
+    }
+  }, 500);
+}
+
+// Initialize keypads on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  // Registration PIN keypad
+  buildKeypad('regPinKeypad',
+    (d) => { // digit
+      if (authPinState.reg.length < 4) {
+        authPinState.reg += d;
+        renderPinBoxes('regPinBoxes', authPinState.reg);
+        if (authPinState.reg.length === 4) {
+          // Show confirm
+          setTimeout(() => {
+            document.getElementById('regConfirmWrap').style.display = 'flex';
+            renderPinBoxes('regConfirmBoxes', '');
+          }, 200);
+        }
+      }
+    },
+    () => { // backspace
+      if (authPinState.reg.length > 0) {
+        authPinState.reg = authPinState.reg.slice(0, -1);
+        renderPinBoxes('regPinBoxes', authPinState.reg);
+        if (authPinState.reg.length < 4) {
+          document.getElementById('regConfirmWrap').style.display = 'none';
+          document.getElementById('authRegBtn').style.display = 'none';
+          authPinState.regConfirm = '';
+        }
+      }
+    }
+  );
+
+  // Registration Confirm PIN keypad
+  buildKeypad('regConfirmKeypad',
+    (d) => {
+      if (authPinState.regConfirm.length < 4) {
+        authPinState.regConfirm += d;
+        renderPinBoxes('regConfirmBoxes', authPinState.regConfirm);
+        if (authPinState.regConfirm.length === 4) {
+          if (authPinState.regConfirm === authPinState.reg) {
+            document.getElementById('authRegError').textContent = '';
+            document.getElementById('authRegBtn').style.display = 'block';
+          } else {
+            document.getElementById('authRegError').textContent = 'PINs do not match — try again';
+            shakePinBoxes('regConfirmBoxes');
+            setTimeout(() => {
+              authPinState.regConfirm = '';
+              renderPinBoxes('regConfirmBoxes', '');
+            }, 600);
+          }
+        }
+      }
+    },
+    () => {
+      if (authPinState.regConfirm.length > 0) {
+        authPinState.regConfirm = authPinState.regConfirm.slice(0, -1);
+        renderPinBoxes('regConfirmBoxes', authPinState.regConfirm);
+        document.getElementById('authRegBtn').style.display = 'none';
+      }
+    }
+  );
+
+  // Login PIN keypad
+  buildKeypad('loginPinKeypad',
+    (d) => {
+      if (authPinState.login.length < 4) {
+        authPinState.login += d;
+        renderPinBoxes('loginPinBoxes', authPinState.login);
+        if (authPinState.login.length === 4) {
+          authVerifyPin();
+        }
+      }
+    },
+    () => {
+      if (authPinState.login.length > 0) {
+        authPinState.login = authPinState.login.slice(0, -1);
+        renderPinBoxes('loginPinBoxes', authPinState.login);
+      }
+    }
+  );
+});
+
+async function authRegister() {
+  const name = document.getElementById('authRegName').value.trim();
+  if (!name) {
+    document.getElementById('authRegError').textContent = 'Enter your name';
+    return;
+  }
+  if (authPinState.reg.length !== 4) {
+    document.getElementById('authRegError').textContent = 'Enter a 4-digit PIN';
+    return;
+  }
+
+  document.getElementById('authRegBtn').disabled = true;
+  document.getElementById('authRegBtnInner').innerHTML = '<span class="auth-spinner"></span>';
+  document.getElementById('authRegError').textContent = '';
+
+  try {
+    const hash = await dcrypt.hash(authPinState.reg, 10);
+    const result = await DB.registerUser({
+      phone: authPhoneNormalized,
+      name: name,
+      pin_hash: hash
+    });
+    const user = Array.isArray(result) ? result[0] : result;
+    if (user && user.id) {
+      localStorage.setItem(LS_USER, user.id);
+      localStorage.setItem(LS_NAME, user.name);
+      launch();
+    } else {
+      document.getElementById('authRegError').textContent = 'Registration failed — try again';
+    }
+  } catch (e) {
+    console.error(e);
+    const errMsg = e.message || '';
+    if (errMsg.includes('duplicate') || errMsg.includes('unique')) {
+      document.getElementById('authRegError').textContent = 'Phone number already registered';
+    } else {
+      document.getElementById('authRegError').textContent = 'Registration failed — check connection';
+    }
+  } finally {
+    document.getElementById('authRegBtn').disabled = false;
+    document.getElementById('authRegBtnInner').textContent = 'Create Account ⚡';
+  }
+}
+
+async function authVerifyPin() {
+  if (!authFoundUser || authPinState.login.length !== 4) return;
+
+  document.getElementById('authLoginError').textContent = '';
+
+  try {
+    const match = await dcrypt.compare(authPinState.login, authFoundUser.pin_hash);
+    if (match) {
+      localStorage.setItem(LS_USER, authFoundUser.id);
+      localStorage.setItem(LS_NAME, authFoundUser.name);
+      launch();
+    } else {
+      authFailCount++;
+      shakePinBoxes('loginPinBoxes');
+      setTimeout(() => {
+        authPinState.login = '';
+        renderPinBoxes('loginPinBoxes', '');
+      }, 500);
+      if (authFailCount >= 3) {
+        document.getElementById('authLoginError').textContent = 'Trouble logging in? Contact your supervisor.';
+      } else {
+        document.getElementById('authLoginError').textContent = 'Incorrect PIN — try again';
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    document.getElementById('authLoginError').textContent = 'Verification error — try again';
+    authPinState.login = '';
+    renderPinBoxes('loginPinBoxes', '');
+  }
+}
+
+function authSwitchAccount() {
+  localStorage.removeItem(LS_USER);
+  localStorage.removeItem(LS_NAME);
+  authGoStep(1);
+  document.getElementById('authPhone').value = '';
+}
+
+// ═══════════════════════════════════
+// LAUNCH & AUTO-LOGIN
+// ═══════════════════════════════════
+function launch() {
+  USER_ID = localStorage.getItem('volt_user_id');
+  USER_NAME = localStorage.getItem('volt_user_name') || 'Electrician';
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  detectLocation();
+  loadJobs();
+  renderLearnTab();
+}
+
+// Auto-login check
+window.addEventListener('DOMContentLoaded', () => {
+  const uid = localStorage.getItem('volt_user_id');
+  const name = localStorage.getItem('volt_user_name');
+  if (uid && name) {
+    launch();
+  }
+});
+
+// ═══════════════════════════════════
+// bcrypt alias — bcryptjs CDN exposes as dcodeIO.bcrypt
+// ═══════════════════════════════════
+const dcrypt = (window.dcodeIO && window.dcodeIO.bcrypt) || window.bcrypt || (() => {
+  throw new Error('bcrypt library not loaded');
+});
+
+// ═══════════════════════════════════
+// LOCATION & NEC
+// ═══════════════════════════════════
+function detectLocation() {
+  document.getElementById('locText').textContent = 'Locating…';
+  document.getElementById('locBadge').classList.remove('ok');
+  if (!navigator.geolocation) { setNEC('Unknown', 'NEC 2023', 'National default'); return; }
+  navigator.geolocation.getCurrentPosition(async pos => {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`);
+      const d = await r.json();
+      const state = d.address?.state || '';
+      const city = d.address?.city || d.address?.town || d.address?.county || '';
+      const display = city ? `${city}, ${state}` : state;
+      const nec = getNEC(state);
+      setNEC(display, nec.version, nec.notes);
+    } catch { setNEC('Unknown', 'NEC 2023', 'National default'); }
+  }, () => setNEC('Denied', 'NEC 2023', 'National default'));
+}
+
+const NEC_MAP = {
+  'Florida': { version: 'NEC 2020', notes: 'FL statewide adoption' },
+  'California': { version: 'CEC 2022', notes: 'California Electrical Code' },
+  'Texas': { version: 'NEC 2020', notes: 'Local jurisdictions may vary' },
+  'New York': { version: 'NEC 2017', notes: 'NY with state amendments' },
+  'Illinois': { version: 'NEC 2023', notes: 'IL statewide' },
+  'Ohio': { version: 'NEC 2017', notes: 'Check local jurisdiction' },
+  'Georgia': { version: 'NEC 2020', notes: 'GA statewide' },
+  'North Carolina': { version: 'NEC 2023', notes: 'NC statewide' },
+  'Washington': { version: 'NEC 2023', notes: 'WA with amendments' },
+  'Arizona': { version: 'NEC 2017', notes: 'City-level variation' },
+  'Colorado': { version: 'NEC 2020', notes: 'CO statewide' },
+  'Michigan': { version: 'NEC 2023', notes: 'MI statewide' },
+  'Pennsylvania': { version: 'NEC 2023', notes: 'PA statewide' },
+  'Virginia': { version: 'NEC 2017', notes: 'VA statewide' },
+  'Tennessee': { version: 'NEC 2020', notes: 'TN statewide' },
+};
+
+function getNEC(s) {
+  for (const [k, v] of Object.entries(NEC_MAP)) {
+    if (s.toLowerCase().includes(k.toLowerCase())) return v;
+  }
+  return { version: 'NEC 2023', notes: 'National default — verify locally' };
+}
+
+function setNEC(loc, version, notes) {
+  necInfo = { location: loc, version, notes };
+  document.getElementById('locText').textContent = loc;
+  document.getElementById('locBadge').classList.add('ok');
+  document.getElementById('necVal').textContent = version;
+  document.getElementById('necSub').textContent = notes;
+}
+
+// ═══════════════════════════════════
+// TABS
+// ═══════════════════════════════════
+function switchTab(t) {
+  const tabs = ['inspect','code','jobs','learn'];
+  tabs.forEach((id, i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', id === t);
+    document.getElementById('panel-' + id).classList.toggle('active', id === t);
+  });
+  if (t === 'jobs') loadJobs();
+  if (t === 'learn') renderLearnTab();
+}
+
+// ═══════════════════════════════════
+// INSPECT — PHOTO
+// ═══════════════════════════════════
+function setPhase(p, el) {
+  currentPhase = p;
+  document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { before: 'BEFORE', after: 'AFTER', general: 'GENERAL' };
+  document.getElementById('previewTag').textContent = labels[p];
+}
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const src = e.target.result;
+    currentImageB64 = src.split(',')[1];
+    currentImageMime = file.type || 'image/jpeg';
+    document.getElementById('previewImg').src = src;
+    document.getElementById('uploadZone').style.display = 'none';
+    document.getElementById('previewWrap').style.display = 'block';
+    document.getElementById('analyzeBtn').disabled = false;
+    document.getElementById('resultsArea').innerHTML = '';
+    document.getElementById('saveBar').style.display = 'none';
+    lastAnalysis = null;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzePhoto() {
+  if (!currentImageB64) return;
+  document.getElementById('loadingOv').style.display = 'flex';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  const loc = necInfo ? `Location: ${necInfo.location}. Code: ${necInfo.version}. ${necInfo.notes}.` : 'Use NEC 2023.';
+  const sys = `You are a master electrician and electrical inspector AI. Analyze electrical photos.
+${loc}
+Respond ONLY with valid JSON:
+{"summary":"one sentence","issues":[{"severity":"critical|warning|info","title":"short","description":"what you see","code":"NEC citation or empty","fix":"action to take"}],"overall":"safe|caution|dangerous","codeRefs":["NEC 210.12","NEC 250.130"]}
+- critical=immediate hazard, warning=potential issue, info=observation
+- codeRefs: array of any NEC sections referenced (used for learning tracking)
+- If no electrical content: issues=[], summary="No electrical content detected."`;
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST', headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 1024, system: sys, messages: [{
+        role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: currentImageMime, data: currentImageB64 } },
+          { type: 'text', text: 'Analyze this electrical photo for safety issues, code violations, and fixes.' }
+        ]
+      }]})
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    lastAnalysis = { ...parsed, phase: currentPhase, imageThumb: document.getElementById('previewImg').src };
+    renderResults(parsed);
+    updateSaveBar();
+    // Track code refs in learning
+    if (parsed.codeRefs?.length) {
+      parsed.codeRefs.forEach(c => DB.createLearningEvent({ event_type: 'photo_code_ref', code_ref: c, topic: c, job_id: activeJobId || null }).catch(() => {}));
+    }
+  } catch (e) {
+    toast('Analysis failed — check connection');
+    console.error(e);
+  } finally {
+    document.getElementById('loadingOv').style.display = 'none';
+    document.getElementById('analyzeBtn').disabled = false;
+  }
+}
+
+function renderResults(d) {
+  const area = document.getElementById('resultsArea');
+  area.innerHTML = '';
+  if (!d.issues || d.issues.length === 0) {
+    area.innerHTML = `<div class="sev-card info"><div class="sev-top"><span class="sev-pill">OK</span></div><div class="sev-title">No Issues Detected</div><div class="sev-body">${d.summary||'No electrical content found.'}</div></div>`;
+    return;
+  }
+  const oc = d.overall==='dangerous'?'critical':d.overall==='caution'?'warning':'info';
+  const sumEl = document.createElement('div');
+  sumEl.className = 'sev-card summary-card';
+  sumEl.innerHTML = `<div class="sev-top"><span class="sev-pill">SUMMARY</span></div><div class="sev-title">📋 ${d.summary}</div>`;
+  area.appendChild(sumEl);
+  const sec = document.createElement('div');
+  sec.className = 'section-label';
+  sec.textContent = `FINDINGS · ${d.issues.length} ITEM${d.issues.length!==1?'S':''}`;
+  area.appendChild(sec);
+  d.issues.forEach(issue => {
+    const el = document.createElement('div');
+    el.className = `sev-card ${issue.severity}`;
+    const lab = issue.severity==='critical'?'🔴 CRITICAL':issue.severity==='warning'?'⚠️ WARNING':'ℹ️ NOTE';
+    el.innerHTML = `<div class="sev-top"><span class="sev-pill">${lab}</span>${issue.code?`<span class="code-tag">${issue.code}</span>`:''}</div><div class="sev-title">${issue.title}</div><div class="sev-body">${issue.description}</div>${issue.fix?`<div class="sev-fix"><strong>▶ FIX:</strong> ${issue.fix}</div>`:''}`;
+    area.appendChild(el);
+  });
+}
+
+function updateSaveBar() {
+  const bar = document.getElementById('saveBar');
+  if (!lastAnalysis) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  const job = jobsCache.find(j => j.id === activeJobId);
+  document.getElementById('sbJobName').textContent = job ? (job.wo_number?`${job.wo_number} · `:'') + (job.address||'No address') : 'No active job — create one first';
+  document.getElementById('sbBtn').disabled = !job;
+  document.getElementById('sbBtn').textContent = '💾 Save';
+}
+
+async function saveToJob() {
+  if (!lastAnalysis || !activeJobId) return;
+  const job = jobsCache.find(j => j.id === activeJobId);
+  if (!job) { toast('Select an active job first'); return; }
+  document.getElementById('sbBtn').disabled = true;
+  document.getElementById('sbBtn').textContent = 'Saving…';
+  try {
+    const counts = { critical: 0, warning: 0, info: 0 };
+    (lastAnalysis.issues || []).forEach(i => counts[i.severity] = (counts[i.severity]||0)+1);
+    await DB.createInspection({
+      job_id: activeJobId,
+      phase: lastAnalysis.phase || 'general',
+      photo_thumb: lastAnalysis.imageThumb?.substring(0, 50000) || '',
+      ai_summary: lastAnalysis.summary || '',
+      ai_overall: lastAnalysis.overall || 'safe',
+      issues: JSON.stringify(lastAnalysis.issues || []),
+      code_refs: JSON.stringify(lastAnalysis.codeRefs || []),
+      counts: JSON.stringify(counts),
+    });
+    // Save code refs to code_refs table
+    for (const cr of (lastAnalysis.codeRefs || [])) {
+      await DB.createCodeRef({ job_id: activeJobId, code_citation: cr, description: `From photo analysis (${lastAnalysis.phase})` }).catch(() => {});
+    }
+    document.getElementById('sbBtn').textContent = '✅ Saved';
+    toast(`Saved to ${job.address || job.wo_number}`);
+  } catch (e) {
+    toast('Save failed');
+    document.getElementById('sbBtn').disabled = false;
+    document.getElementById('sbBtn').textContent = '💾 Save';
+  }
+}
+
+// ═══════════════════════════════════
+// CODE CHAT
+// ═══════════════════════════════════
+function askCode(q) { document.getElementById('codeInput').value = q; sendCode(); }
+
+async function sendCode() {
+  const inp = document.getElementById('codeInput');
+  const q = inp.value.trim();
+  if (!q) return;
+  inp.value = ''; inp.style.height = 'auto';
+  appendMsg('user', q);
+  codeHistory.push({ role: 'user', content: q });
+
+  // Log to active job if one is set
+  if (activeJobId) {
+    DB.createChatEntry({ job_id: activeJobId, role: 'user', content: q }).catch(() => {});
+  }
+
+  const typing = showTyping();
+  document.getElementById('sendCodeBtn').disabled = true;
+  const loc = necInfo ? `Location: ${necInfo.location}. Code: ${necInfo.version}. ${necInfo.notes}.` : 'Use NEC 2023.';
+  const sys = `You are an expert electrician and NEC code specialist.
+${loc}
+- Lead with the direct answer
+- Cite NEC article/section numbers (e.g., NEC 210.12) when relevant
+- Use **bold** for code refs and key terms
+- Use backticks for formulas/calculations
+- Keep it practical — field electrician audience
+- Note jurisdiction-dependent items clearly`;
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST', headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 1024, system: sys, messages: codeHistory })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'No response.';
+    typing.remove();
+    appendMsg('ai', fmtReply(reply), true);
+    codeHistory.push({ role: 'assistant', content: reply });
+    // Log reply to active job
+    if (activeJobId) {
+      DB.createChatEntry({ job_id: activeJobId, role: 'assistant', content: reply }).catch(() => {});
+    }
+    // Extract & track NEC references
+    const refs = extractNECRefs(reply);
+    refs.forEach(r => {
+      DB.createLearningEvent({ event_type: 'code_question', code_ref: r, topic: q.substring(0,80), job_id: activeJobId||null }).catch(() => {});
+      if (activeJobId) DB.createCodeRef({ job_id: activeJobId, code_citation: r, description: q.substring(0,120) }).catch(() => {});
+    });
+  } catch {
+    typing.remove();
+    appendMsg('ai', 'Connection error. Try again.');
+  } finally {
+    document.getElementById('sendCodeBtn').disabled = false;
+    scrollChat('codeChat');
+  }
+}
+
+function extractNECRefs(text) {
+  const matches = text.match(/NEC\s+\d+[\.\d]*/g) || [];
+  return [...new Set(matches)];
+}
+
+function fmtReply(t) {
+  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\n\n/g,'<br><br>').replace(/\n/g,'<br>');
+}
+
+function appendMsg(role, content, isHtml = false) {
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  if (isHtml) div.innerHTML = content; else div.textContent = content;
+  document.getElementById('codeChat').appendChild(div);
+  scrollChat('codeChat');
+  return div;
+}
+
+function showTyping() {
+  const div = document.createElement('div');
+  div.className = 'typing';
+  div.innerHTML = '<div class="tdot"></div><div class="tdot"></div><div class="tdot"></div>';
+  document.getElementById('codeChat').appendChild(div);
+  scrollChat('codeChat');
+  return div;
+}
+
+function scrollChat(id) { const c = document.getElementById(id); setTimeout(() => c.scrollTop = c.scrollHeight, 50); }
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight,110)+'px'; }
+
+// ═══════════════════════════════════
+// JOBS
+// ═══════════════════════════════════
+async function loadJobs() {
+  try {
+    jobsCache = await DB.getJobs() || [];
+    renderJobList();
+  } catch { toast('Could not load jobs'); }
+}
+
+function renderJobList() {
+  const list = document.getElementById('jobsList');
+  const empty = document.getElementById('jobsEmpty');
+  list.innerHTML = '';
+  if (!jobsCache.length) { empty.style.display = 'flex'; return; }
+  empty.style.display = 'none';
+  jobsCache.forEach(job => {
+    const isActive = job.id === activeJobId;
+    const card = document.createElement('div');
+    card.className = `job-card${isActive?' active':''}`;
+    card.innerHTML = `
+      ${isActive ? '<div class="active-badge">Active</div>' : ''}
+      ${job.wo_number ? `<div class="jc-wo">WO: ${job.wo_number}</div>` : ''}
+      <div class="jc-addr">${job.address || 'No address'}</div>
+      <div class="jc-type">${job.job_type || 'Service Call'} · ${fmtDate(job.created_at)}</div>
+      ${job.notes ? `<div style="font-size:12px;color:var(--muted);margin-top:4px">${job.notes.substring(0,60)}${job.notes.length>60?'…':''}</div>` : ''}
+      <div class="jc-actions">
+        <div class="jca pri" onclick="event.stopPropagation();openJobDetail('${job.id}')">📂 Open</div>
+        ${!isActive ? `<div class="jca" onclick="event.stopPropagation();setActive('${job.id}')">⚡ Set Active</div>` : ''}
+        <div class="jca danger" onclick="event.stopPropagation();deleteJob('${job.id}')">🗑</div>
+      </div>`;
+    list.appendChild(card);
+  });
+}
+
+function setActive(id) {
+  activeJobId = id;
+  const job = jobsCache.find(j => j.id === id);
+  document.getElementById('activeJobPill').style.display = 'flex';
+  document.getElementById('activeJobPillText').textContent = job?.address || job?.wo_number || 'Job';
+  renderJobList();
+  updateSaveBar();
+  toast('Active job set');
+}
+
+async function deleteJob(id) {
+  if (!confirm('Delete this job and all its data?')) return;
+  try {
+    await DB.deleteJob(id);
+    if (activeJobId === id) { activeJobId = null; document.getElementById('activeJobPill').style.display = 'none'; }
+    await loadJobs();
+    toast('Job deleted');
+  } catch { toast('Delete failed'); }
+}
+
+function openNewJobModal() {
+  document.getElementById('mWo').value = '';
+  document.getElementById('mAddr').value = '';
+  document.getElementById('mNotes').value = '';
+  selectedType = 'Service Call';
+  document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.toggle('on', c.textContent === selectedType));
+  document.getElementById('newJobModal').style.display = 'flex';
+}
+
+function closeNewJobModal() { document.getElementById('newJobModal').style.display = 'none'; }
+
+function pickType(el) {
+  selectedType = el.textContent;
+  document.querySelectorAll('#typeChips .chip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+async function createJob() {
+  const wo = document.getElementById('mWo').value.trim();
+  const addr = document.getElementById('mAddr').value.trim();
+  const notes = document.getElementById('mNotes').value.trim();
+  if (!addr && !wo) { toast('Enter an address or work order number'); return; }
+  try {
+    const jobs = await DB.createJob({ wo_number: wo||null, address: addr||null, job_type: selectedType, notes: notes||null, status: 'active' });
+    closeNewJobModal();
+    const newJob = Array.isArray(jobs) ? jobs[0] : jobs;
+    if (newJob?.id) {
+      jobsCache.unshift(newJob);
+      setActive(newJob.id);
+    }
+    renderJobList();
+    toast('Job created ⚡');
+  } catch (e) { toast('Create failed — check DB'); console.error(e); }
+}
+
+// ═══════════════════════════════════
+// JOB DETAIL
+// ═══════════════════════════════════
+async function openJobDetail(id) {
+  viewingJobId = id;
+  const job = jobsCache.find(j => j.id === id);
+  if (!job) return;
+  document.getElementById('jdWo').textContent = job.wo_number ? `WO: ${job.wo_number}` : '';
+  document.getElementById('jdAddr').textContent = job.address || 'No address';
+  document.getElementById('jobDetail').classList.add('open');
+
+  // Load all data in parallel
+  const [inspections, materials, codeRefs, chatLog] = await Promise.all([
+    DB.getInspections(id).catch(() => []),
+    DB.getMaterials(id).catch(() => []),
+    DB.getCodeRefs(id).catch(() => []),
+    DB.getChatLog(id).catch(() => []),
+  ]);
+
+  renderJobDetailPhotos(inspections);
+  renderMaterials(materials);
+  renderCodeRefs(codeRefs);
+  renderInspTimeline(inspections);
+  renderChatLog(chatLog);
+}
+
+function closeJobDetail() { document.getElementById('jobDetail').classList.remove('open'); }
+
+function renderJobDetailPhotos(inspections) {
+  const grid = document.getElementById('jdPhotoGrid');
+  grid.innerHTML = '';
+  const phases = ['before', 'after'];
+  phases.forEach(phase => {
+    const phaseInsp = inspections.filter(i => i.phase === phase);
+    const slot = document.createElement('div');
+    slot.className = 'photo-slot';
+    if (phaseInsp.length && phaseInsp[0].photo_thumb) {
+      const img = document.createElement('img');
+      img.src = phaseInsp[0].photo_thumb;
+      slot.appendChild(img);
+      const tag = document.createElement('div');
+      tag.className = `photo-tag ${phase}`;
+      tag.textContent = phase.toUpperCase();
+      slot.appendChild(tag);
+    } else {
+      slot.innerHTML = `<div class="photo-slot-icon">📷</div><div class="photo-slot-label">${phase.toUpperCase()}</div>`;
+    }
+    grid.appendChild(slot);
+  });
+}
+
+function renderMaterials(materials) {
+  const list = document.getElementById('jdMatList');
+  list.innerHTML = '';
+  if (!materials.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">No materials logged yet.</div>';
+    return;
+  }
+  materials.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'mat-row';
+    row.innerHTML = `<div class="mat-name">${m.name}</div><div class="mat-qty">${m.quantity || '—'}</div><button class="mat-del" onclick="removeMaterial('${m.id}')">✕</button>`;
+    list.appendChild(row);
+  });
+}
+
+async function addMaterial() {
+  const name = document.getElementById('matName').value.trim();
+  const qty = document.getElementById('matQty').value.trim();
+  if (!name) { toast('Enter a material name'); return; }
+  try {
+    await DB.createMaterial({ job_id: viewingJobId, name, quantity: qty || null });
+    document.getElementById('matName').value = '';
+    document.getElementById('matQty').value = '';
+    const mats = await DB.getMaterials(viewingJobId);
+    renderMaterials(mats);
+    toast('Material added');
+  } catch { toast('Could not add material'); }
+}
+
+async function removeMaterial(id) {
+  await DB.deleteMaterial(id).catch(() => {});
+  const mats = await DB.getMaterials(viewingJobId).catch(() => []);
+  renderMaterials(mats);
+}
+
+function renderCodeRefs(refs) {
+  const list = document.getElementById('jdCodeRefs');
+  list.innerHTML = '';
+  if (!refs.length) {
+    list.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">No code references logged yet.</div>';
+    return;
+  }
+  const seen = new Set();
+  refs.forEach(r => {
+    if (seen.has(r.code_citation)) return;
+    seen.add(r.code_citation);
+    const row = document.createElement('div');
+    row.className = 'code-ref-row';
+    row.innerHTML = `<div class="code-ref-cite">${r.code_citation}</div><div class="code-ref-desc">${r.description || ''}</div>`;
+    list.appendChild(row);
+  });
+}
+
+function renderInspTimeline(inspections) {
+  const tl = document.getElementById('jdInspTimeline');
+  tl.innerHTML = '';
+  if (!inspections.length) {
+    tl.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">No inspections logged yet.</div>';
+    return;
+  }
+  inspections.forEach(insp => {
+    const issues = JSON.parse(insp.issues || '[]');
+    const counts = JSON.parse(insp.counts || '{}');
+    const entry = document.createElement('div');
+    entry.className = 'insp-entry';
+    const phaseClass = `phase-${insp.phase || 'general'}`;
+    entry.innerHTML = `
+      <div class="insp-entry-head" onclick="toggleInspEntry(this)">
+        <span class="insp-phase-badge ${phaseClass}">${(insp.phase||'general').toUpperCase()}</span>
+        <span class="insp-summary">${insp.ai_summary||'No summary'}</span>
+        <span class="insp-time">${fmtDate(insp.created_at)}</span>
+        <span style="color:var(--muted);margin-left:4px;font-size:12px">▼</span>
+      </div>
+      <div class="insp-expand">
+        ${insp.photo_thumb ? `<img class="insp-thumb" src="${insp.photo_thumb}" alt="Photo">` : ''}
+        ${issues.map(i => `<div class="insp-issue-row ${i.severity}"><div style="font-size:11px;font-weight:700;color:${i.severity==='critical'?'var(--red)':i.severity==='warning'?'var(--amber)':'var(--green)'};letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">${i.severity}</div><div style="font-size:13px;font-weight:600;margin-bottom:2px">${i.title}</div><div style="font-size:12px;color:var(--text2)">${i.description}</div>${i.fix?`<div style="font-size:12px;color:var(--green);margin-top:6px">▶ ${i.fix}</div>`:''}</div>`).join('')}
+      </div>`;
+    tl.appendChild(entry);
+  });
+}
+
+function toggleInspEntry(el) {
+  const exp = el.nextElementSibling;
+  exp.classList.toggle('open');
+}
+
+function renderChatLog(log) {
+  const cl = document.getElementById('jdChatLog');
+  cl.innerHTML = '';
+  if (!log.length) {
+    cl.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:4px 0">No code questions logged for this job yet.</div>';
+    return;
+  }
+  log.forEach(entry => {
+    const el = document.createElement('div');
+    el.className = `cl-entry ${entry.role}`;
+    el.innerHTML = `<div class="cl-role">${entry.role === 'user' ? '👷 You' : '⚡ Volt'}</div>${fmtReply(entry.content)}`;
+    cl.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════
+// BOSS REPORT
+// ═══════════════════════════════════
+async function generateBossReport() {
+  const job = jobsCache.find(j => j.id === viewingJobId);
+  if (!job) return;
+  document.getElementById('bossModal').style.display = 'flex';
+  document.getElementById('bossContent').innerHTML = `<div class="generating-wrap"><div class="gen-bolt">⚡</div><div class="gen-text">Generating Report…</div><div style="color:var(--muted);font-size:13px">Compiling job data…</div></div>`;
+
+  const [inspections, materials, codeRefs] = await Promise.all([
+    DB.getInspections(viewingJobId).catch(() => []),
+    DB.getMaterials(viewingJobId).catch(() => []),
+    DB.getCodeRefs(viewingJobId).catch(() => []),
+  ]);
+
+  const jobContext = `
+JOB: ${job.wo_number ? 'WO: ' + job.wo_number + ' | ' : ''}${job.address || 'No address'}
+TYPE: ${job.job_type}
+DATE: ${fmtDate(job.created_at)}
+NOTES: ${job.notes || 'None'}
+
+INSPECTIONS (${inspections.length}):
+${inspections.map(i => {
+  const issues = JSON.parse(i.issues || '[]');
+  const counts = JSON.parse(i.counts || '{}');
+  return `  [${(i.phase||'general').toUpperCase()}] ${i.ai_summary} | Overall: ${i.ai_overall} | Critical:${counts.critical||0} Warning:${counts.warning||0}
+  Issues: ${issues.map(x => `${x.title} (${x.severity})`).join(', ') || 'None'}`;
+}).join('\n')}
+
+MATERIALS USED (${materials.length}):
+${materials.map(m => `  - ${m.name}${m.quantity ? ': ' + m.quantity : ''}`).join('\n') || '  None logged'}
+
+CODE REFERENCES CITED:
+${[...new Set(codeRefs.map(r => r.code_citation))].join(', ') || 'None logged'}
+  `.trim();
+
+  const sys = `You are generating a professional field report for a foreman/supervisor. 
+Create a clear, concise update message from this job data. Structure it as:
+
+1. JOB HEADER (WO/address/date)
+2. WORK SUMMARY (what was done, 2-3 sentences)  
+3. BEFORE/AFTER STATUS (what issues were found vs what was resolved)
+4. MATERIALS USED (clean list)
+5. CODE COMPLIANCE (which NEC sections were verified/followed)
+6. SAFETY STATUS (overall safety assessment)
+7. RECOMMENDED FOLLOW-UP (if any)
+
+Keep it professional but readable. Use plain text — no markdown — this will be copy-pasted into a text message or email. Sign off as "${USER_NAME}".`;
+
+  try {
+    const res = await fetch(CLAUDE_API, {
+      method: 'POST', headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ model: MODEL, max_tokens: 1024, system: sys, messages: [{ role: 'user', content: jobContext }] })
+    });
+    const data = await res.json();
+    const report = data.content?.[0]?.text || 'Could not generate report.';
+    document.getElementById('bossContent').innerHTML = `
+      <div class="boss-report-wrap">${escHtml(report)}</div>
+      <button class="copy-report-btn" onclick="copyReport(this,'${encodeURIComponent(report)}')">📋 COPY REPORT</button>`;
+  } catch {
+    document.getElementById('bossContent').innerHTML = '<div style="color:var(--red);padding:20px;text-align:center">Report generation failed. Check connection.</div>';
+  }
+}
+
+function copyReport(btn, encoded) {
+  const text = decodeURIComponent(encoded);
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = '✅ COPIED!'; setTimeout(() => btn.textContent = '📋 COPY REPORT', 2000); });
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// ═══════════════════════════════════
+// LEARN TAB
+// ═══════════════════════════════════
+async function renderLearnTab() {
+  const body = document.getElementById('learnBody');
+  body.innerHTML = '<div style="text-align:center;padding:60px 24px;color:var(--muted)"><div style="font-size:48px;margin-bottom:12px">⚡</div><div style="font-family:var(--fd);font-size:18px;font-weight:700;letter-spacing:2px;color:var(--gold)">Loading…</div></div>';
+
+  try {
+    const [events, jobs] = await Promise.all([
+      DB.getLearningEvents().catch(() => []),
+      DB.getJobs().catch(() => []),
+    ]);
+
+    // Process events
+    const codeCounts = {};
+    const topicCounts = {};
+    events.forEach(e => {
+      if (e.code_ref) codeCounts[e.code_ref] = (codeCounts[e.code_ref]||0)+1;
+      if (e.topic) {
+        const k = e.topic.substring(0,40);
+        topicCounts[k] = (topicCounts[k]||0)+1;
+      }
+    });
+
+    const sortedCodes = Object.entries(codeCounts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const totalEvents = events.length;
+    const jobCount = jobs.length;
+
+    // Determine level
+    const level = totalEvents < 10 ? 'Apprentice' : totalEvents < 40 ? 'Journeyman' : totalEvents < 100 ? 'Foreman' : 'Master Electrician';
+    const levelEmoji = { 'Apprentice': '🔌', 'Journeyman': '⚡', 'Foreman': '🛠️', 'Master Electrician': '🏆' }[level];
+
+    // Issue type breakdown from code refs
+    const issueTypes = [
+      { label: 'AFCI/GFCI', pattern: /210\.12|210\.8|AFCI|GFCI/i },
+      { label: 'Grounding', pattern: /250\./i },
+      { label: 'Wiring Methods', pattern: /300\.|310\./i },
+      { label: 'Breakers/Panels', pattern: /230\.|240\./i },
+      { label: 'Outlets/Circuits', pattern: /210\./i },
+    ];
+    const itCounts = issueTypes.map(it => ({
+      label: it.label,
+      count: Object.entries(codeCounts).filter(([k]) => it.pattern.test(k)).reduce((s,[,v])=>s+v,0)
+    })).filter(x => x.count > 0).sort((a,b)=>b.count-a.count);
+    const maxIt = itCounts[0]?.count || 1;
+
+    body.innerHTML = `
+      <div class="learn-hero">
+        <div class="learn-name">${USER_NAME}</div>
+        <div class="learn-subtitle">Volt Pro · Field Intelligence Profile</div>
+        <div class="learn-level">${levelEmoji} ${level}</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-val">${jobCount}</div><div class="stat-label">Jobs Logged</div></div>
+        <div class="stat-card"><div class="stat-val">${sortedCodes.length}</div><div class="stat-label">Codes Referenced</div></div>
+        <div class="stat-card"><div class="stat-val">${events.filter(e=>e.event_type==='photo_code_ref').length}</div><div class="stat-label">Photo Analyses</div></div>
+        <div class="stat-card"><div class="stat-val">${events.filter(e=>e.event_type==='code_question').length}</div><div class="stat-label">Code Questions</div></div>
+      </div>
+
+      ${sortedCodes.length ? `
+      <div>
+        <div class="jd-sec-title" style="font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:10px">Top NEC Sections <span style="flex:1;height:1px;background:var(--border);display:block"></span></div>
+        <div class="top-codes">
+          ${sortedCodes.map(([code, count], i) => `
+          <div class="code-learn-row">
+            <div class="clr-rank">${i+1}</div>
+            <div class="clr-main">
+              <div class="clr-code">${code}</div>
+              <div class="clr-desc">${NECDesc(code)}</div>
+            </div>
+            <div class="clr-count">${count}×</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      ${itCounts.length ? `
+      <div>
+        <div class="jd-sec-title" style="font-family:var(--fd);font-size:14px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;margin-bottom:10px">Issue Patterns <span style="flex:1;height:1px;background:var(--border);display:block"></span></div>
+        <div class="issue-type-list">
+          ${itCounts.map(it => `<div class="it-row"><div class="it-label">${it.label}</div><div class="it-bar-wrap"><div class="it-bar" style="width:${Math.round(it.count/maxIt*100)}%"></div></div><div class="it-count">${it.count}</div></div>`).join('')}
+        </div>
+      </div>` : ''}
+
+      ${totalEvents === 0 ? `<div style="text-align:center;padding:32px;color:var(--muted);font-size:14px;line-height:1.7">Your learning profile grows as you analyze photos and ask code questions.<br><br>Start by opening a job and inspecting some wiring! ⚡</div>` : ''}
+
+      <button class="refresh-learn-btn" onclick="renderLearnTab()">↻ Refresh Profile</button>
+    `;
+  } catch (e) {
+    body.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted)">Could not load learning data.</div>';
+    console.error(e);
+  }
+}
+
+function NECDesc(code) {
+  const map = {
+    'NEC 210.12': 'AFCI circuit protection',
+    'NEC 210.8': 'GFCI protection requirements',
+    'NEC 250': 'Grounding & bonding',
+    'NEC 300': 'Wiring methods general',
+    'NEC 310': 'Conductors for general wiring',
+    'NEC 230': 'Services',
+    'NEC 240': 'Overcurrent protection',
+    'NEC 404': 'Switches',
+    'NEC 406': 'Receptacles',
+    'NEC 408': 'Switchboards & panelboards',
+    'NEC 411': 'Lighting systems',
+  };
+  for (const [k,v] of Object.entries(map)) {
+    if (code.startsWith(k) || code.includes(k.replace('NEC ',''))) return v;
+  }
+  return 'NEC code section';
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
