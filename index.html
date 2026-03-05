@@ -792,8 +792,8 @@ async function authLookupPhone() {
       authGoStep('2a');
     }
   } catch (e) {
-    document.getElementById('authPhoneError').textContent = 'Connection error — try again';
-    console.error(e);
+    document.getElementById('authPhoneError').textContent = 'Error: ' + (e.message || e.toString());
+    console.error('Phone lookup error:', e);
   } finally {
     document.getElementById('authPhoneBtn').disabled = false;
     document.getElementById('authPhoneBtnInner').textContent = 'Continue ➤';
